@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iSCSI Validation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .pass { background-color: #d4edda; }
+        .fail { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>iSCSI Frontend Validation Test</h1>
+    <div id="test-results"></div>
+
+    <script>
+        // Copy validation functions from main form
+        function validateIQN(iqn) {
+            if (!iqn || iqn.trim() === '') return false;
+            
+            const iqnPattern = /^iqn\.\d{4}-\d{2}\.([a-zA-Z0-9\-\.]+):(.+)$/;
+            
+            if (!iqnPattern.test(iqn)) return false;
+            
+            const parts = iqn.split(':');
+            if (parts.length < 2) return false;
+            
+            const dateAndAuthority = parts[0];
+            const uniqueName = parts.slice(1).join(':');
+            
+            const dateMatch = dateAndAuthority.match(/iqn\.(\d{4})-(\d{2})\./);
+            if (!dateMatch) return false;
+            
+            const year = parseInt(dateMatch[1]);
+            const month = parseInt(dateMatch[2]);
+            
+            if (year < 1900 || year > new Date().getFullYear()) return false;
+            if (month < 1 || month > 12) return false;
+            
+            const authority = dateAndAuthority.split('.').slice(2).join('.');
+            if (!authority || authority.length === 0) return false;
+            
+            if (!uniqueName || uniqueName.trim().length === 0) return false;
+            
+            return true;
+        }
+
+        function validateIP(ip) {
+            if (!ip || ip.trim() === '') return false;
+            
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipPattern.test(ip)) return false;
+
+            return ip.split(".").every((octet) => {
+                const num = parseInt(octet);
+                return num >= 0 && num <= 255 && octet === num.toString();
+            });
+        }
+
+        function validatePortal(portal) {
+            if (!portal || portal.trim() === '') return false;
+            
+            const portalPattern = /^(\d{1,3}\.){3}\d{1,3}:\d{1,5}$/;
+            if (!portalPattern.test(portal)) return false;
+
+            const [ip, port] = portal.split(":");
+            const portNum = parseInt(port);
+            return validateIP(ip) && portNum >= 1 && portNum <= 65535;
+        }
+
+        function validateCredentials(username, password) {
+            if (username && username.trim() !== '') {
+                return password && password.trim() !== '';
+            }
+            if (password && password.trim() !== '') {
+                return username && username.trim() !== '';
+            }
+            return true;
+        }
+
+        // Test cases
+        const tests = [
+            // IQN validation tests
+            { name: "Valid IQN", func: validateIQN, input: "iqn.2023-01.com.example:storage.target01", expected: true },
+            { name: "Invalid IQN - no colon", func: validateIQN, input: "iqn.2023-01.com.example", expected: false },
+            { name: "Invalid IQN - wrong date format", func: validateIQN, input: "iqn.23-01.com.example:target", expected: false },
+            { name: "Invalid IQN - invalid month", func: validateIQN, input: "iqn.2023-13.com.example:target", expected: false },
+            { name: "Empty IQN", func: validateIQN, input: "", expected: false },
+            
+            // IP validation tests
+            { name: "Valid IP", func: validateIP, input: "192.168.1.100", expected: true },
+            { name: "Invalid IP - out of range", func: validateIP, input: "256.1.1.1", expected: false },
+            { name: "Invalid IP - wrong format", func: validateIP, input: "192.168.1", expected: false },
+            { name: "Empty IP", func: validateIP, input: "", expected: false },
+            
+            // Portal validation tests
+            { name: "Valid Portal", func: validatePortal, input: "192.168.1.100:3260", expected: true },
+            { name: "Invalid Portal - no port", func: validatePortal, input: "192.168.1.100", expected: false },
+            { name: "Invalid Portal - invalid port", func: validatePortal, input: "192.168.1.100:70000", expected: false },
+            { name: "Empty Portal", func: validatePortal, input: "", expected: false },
+            
+            // Credentials validation tests
+            { name: "Both empty credentials", func: validateCredentials, input: ["", ""], expected: true },
+            { name: "Both provided credentials", func: validateCredentials, input: ["user", "pass"], expected: true },
+            { name: "Username only", func: validateCredentials, input: ["user", ""], expected: false },
+            { name: "Password only", func: validateCredentials, input: ["", "pass"], expected: false },
+        ];
+
+        // Run tests
+        const resultsDiv = document.getElementById('test-results');
+        let passCount = 0;
+        let totalCount = tests.length;
+
+        tests.forEach(test => {
+            let result;
+            if (Array.isArray(test.input)) {
+                result = test.func(...test.input);
+            } else {
+                result = test.func(test.input);
+            }
+            
+            const passed = result === test.expected;
+            if (passed) passCount++;
+            
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-case ${passed ? 'pass' : 'fail'}`;
+            testDiv.innerHTML = `
+                <strong>${test.name}</strong><br>
+                Input: ${Array.isArray(test.input) ? JSON.stringify(test.input) : test.input}<br>
+                Expected: ${test.expected}, Got: ${result}<br>
+                Status: ${passed ? 'PASS' : 'FAIL'}
+            `;
+            resultsDiv.appendChild(testDiv);
+        });
+
+        // Summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.innerHTML = `<h2>Test Summary: ${passCount}/${totalCount} tests passed</h2>`;
+        resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
+    </script>
+</body>
+</html>

@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iSCSI Storage Creation Form - Sample Implementation</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .form-container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .form-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+
+      .form-group.error input {
+        border-color: #dc3545;
+      }
+
+      .error-message {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+
+      .help-text {
+        color: #666;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+
+      .required {
+        color: #dc3545;
+      }
+
+      .advanced-section {
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+        margin-top: 20px;
+      }
+
+      .advanced-toggle {
+        background: none;
+        border: none;
+        color: #007bff;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        text-decoration: underline;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 15px;
+      }
+
+      .form-row .form-group {
+        flex: 1;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        background-color: #007bff;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: #0056b3;
+      }
+
+      .btn-primary:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background-color: #545b62;
+      }
+
+      .iscsi-fields {
+        display: none;
+      }
+
+      .iscsi-fields.show {
+        display: block;
+      }
+
+      .validation-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .field-wrapper {
+        position: relative;
+      }
+
+      .valid {
+        color: #28a745;
+      }
+
+      .invalid {
+        color: #dc3545;
+      }
+
+      .form-group.error input,
+      .form-group.error select {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+      }
+
+      .validation-feedback {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 5px;
+      }
+
+      .validation-feedback.success {
+        color: #28a745;
+      }
+
+      .validation-feedback.error {
+        color: #dc3545;
+      }
+
+      .real-time-validation {
+        transition: all 0.2s ease;
+      }
+
+      .field-wrapper input:focus + .validation-icon {
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <h1 class="form-title">Create Block Storage</h1>
+
+      <form id="storageForm">
+        <!-- Basic Information -->
+        <div class="form-group">
+          <label for="name">Storage Name <span class="required">*</span></label>
+          <input type="text" id="name" name="name" required />
+          <div class="help-text">Enter a unique name for the storage</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="zone">Zone <span class="required">*</span></label>
+            <select id="zone" name="zone" required>
+              <option value="">Select a zone</option>
+              <option value="zone-1">Zone 1</option>
+              <option value="zone-2">Zone 2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="medium_type"
+              >Medium Type <span class="required">*</span></label
+            >
+            <select id="medium_type" name="medium_type" required>
+              <option value="ssd">SSD</option>
+              <option value="rotate">HDD</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="storage_type"
+            >Storage Type <span class="required">*</span></label
+          >
+          <select id="storage_type" name="storage_type" required>
+            <option value="">Select storage type</option>
+            <option value="local">Local</option>
+            <option value="rbd">Ceph RBD</option>
+            <option value="nfs">NFS</option>
+            <option value="gpfs">GPFS</option>
+            <option value="iscsi">iSCSI</option>
+          </select>
+        </div>
+
+        <!-- iSCSI Configuration Fields -->
+        <div id="iscsi-fields" class="iscsi-fields">
+          <h3>iSCSI Configuration</h3>
+
+          <div class="form-group">
+            <label for="iscsi_target"
+              >iSCSI Target <span class="required">*</span></label
+            >
+            <div class="field-wrapper">
+              <input
+                type="text"
+                id="iscsi_target"
+                name="iscsi_target"
+                placeholder="192.168.1.100"
+              />
+              <span class="validation-icon" id="target-icon"></span>
+            </div>
+            <div class="help-text">IP address of the iSCSI target server</div>
+            <div class="error-message" id="target-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="iscsi_iqn"
+              >iSCSI IQN <span class="required">*</span></label
+            >
+            <div class="field-wrapper">
+              <input
+                type="text"
+                id="iscsi_iqn"
+                name="iscsi_iqn"
+                placeholder="iqn.2023-01.com.example:storage.target01"
+              />
+              <span class="validation-icon" id="iqn-icon"></span>
+            </div>
+            <div class="help-text">
+              iSCSI Qualified Name following RFC 3720 format
+            </div>
+            <div class="error-message" id="iqn-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="iscsi_portal"
+              >iSCSI Portal <span class="required">*</span></label
+            >
+            <div class="field-wrapper">
+              <input
+                type="text"
+                id="iscsi_portal"
+                name="iscsi_portal"
+                placeholder="192.168.1.100:3260"
+              />
+              <span class="validation-icon" id="portal-icon"></span>
+            </div>
+            <div class="help-text">
+              Portal address with port (default: 3260)
+            </div>
+            <div class="error-message" id="portal-error"></div>
+          </div>
+
+          <!-- Advanced Options -->
+          <div class="advanced-section">
+            <button type="button" class="advanced-toggle" id="advanced-toggle">
+              Show Advanced Options
+            </button>
+
+            <div id="advanced-options" style="display: none; margin-top: 15px">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="iscsi_username">Username</label>
+                  <div class="field-wrapper">
+                    <input
+                      type="text"
+                      id="iscsi_username"
+                      name="iscsi_username"
+                      placeholder="Optional CHAP username"
+                    />
+                    <span class="validation-icon" id="username-icon"></span>
+                  </div>
+                  <div class="help-text">
+                    CHAP authentication username (optional)
+                  </div>
+                  <div class="error-message" id="username-error"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="iscsi_password">Password</label>
+                  <div class="field-wrapper">
+                    <input
+                      type="password"
+                      id="iscsi_password"
+                      name="iscsi_password"
+                      placeholder="Optional CHAP password"
+                    />
+                    <span class="validation-icon" id="password-icon"></span>
+                  </div>
+                  <div class="help-text">
+                    CHAP authentication password (optional)
+                  </div>
+                  <div class="error-message" id="password-error"></div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="iscsi_lun_id">LUN ID</label>
+                <div class="field-wrapper">
+                  <input
+                    type="number"
+                    id="iscsi_lun_id"
+                    name="iscsi_lun_id"
+                    value="0"
+                    min="0"
+                    max="255"
+                  />
+                  <span class="validation-icon" id="lun-icon"></span>
+                </div>
+                <div class="help-text">
+                  Logical Unit Number (0-255, default: 0)
+                </div>
+                <div class="error-message" id="lun-error"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            Create Storage
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="window.history.back()"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Enhanced validation functions
+      function validateIQN(iqn) {
+        if (!iqn || iqn.trim() === "") return false;
+
+        // RFC 3720 compliant IQN format validation
+        // Format: iqn.yyyy-mm.naming-authority:unique-name
+        const iqnPattern = /^iqn\.\d{4}-\d{2}\.([a-zA-Z0-9\-\.]+):(.+)$/;
+
+        if (!iqnPattern.test(iqn)) return false;
+
+        const parts = iqn.split(":");
+        if (parts.length < 2) return false;
+
+        const dateAndAuthority = parts[0];
+        const uniqueName = parts.slice(1).join(":");
+
+        // Validate date format (yyyy-mm)
+        const dateMatch = dateAndAuthority.match(/iqn\.(\d{4})-(\d{2})\./);
+        if (!dateMatch) return false;
+
+        const year = parseInt(dateMatch[1]);
+        const month = parseInt(dateMatch[2]);
+
+        if (year < 1900 || year > new Date().getFullYear()) return false;
+        if (month < 1 || month > 12) return false;
+
+        // Validate naming authority (reverse domain format)
+        const authority = dateAndAuthority.split(".").slice(2).join(".");
+        if (!authority || authority.length === 0) return false;
+
+        // Validate unique name is not empty
+        if (!uniqueName || uniqueName.trim().length === 0) return false;
+
+        return true;
+      }
+
+      function validateIP(ip) {
+        if (!ip || ip.trim() === "") return false;
+
+        const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipPattern.test(ip)) return false;
+
+        return ip.split(".").every((octet) => {
+          const num = parseInt(octet);
+          return num >= 0 && num <= 255 && octet === num.toString();
+        });
+      }
+
+      function validatePort(port) {
+        const portNum = parseInt(port);
+        return !isNaN(portNum) && portNum >= 1 && portNum <= 65535;
+      }
+
+      function validatePortal(portal) {
+        if (!portal || portal.trim() === "") return false;
+
+        const portalPattern = /^(\d{1,3}\.){3}\d{1,3}:\d{1,5}$/;
+        if (!portalPattern.test(portal)) return false;
+
+        const [ip, port] = portal.split(":");
+        return validateIP(ip) && validatePort(port);
+      }
+
+      function validateRequiredField(value) {
+        return value && value.trim() !== "";
+      }
+
+      function validateLunId(lunId) {
+        const num = parseInt(lunId);
+        return !isNaN(num) && num >= 0 && num <= 255;
+      }
+
+      function validateCredentials(username, password) {
+        // If username is provided, password should also be provided
+        if (username && username.trim() !== "") {
+          return password && password.trim() !== "";
+        }
+        // If password is provided, username should also be provided
+        if (password && password.trim() !== "") {
+          return username && username.trim() !== "";
+        }
+        // Both empty is valid (no authentication)
+        return true;
+      }
+
+      function showValidationIcon(fieldId, isValid, isEmpty = false) {
+        const icon = document.getElementById(fieldId + "-icon");
+        const errorDiv = document.getElementById(fieldId + "-error");
+
+        if (isEmpty) {
+          icon.innerHTML = "";
+          icon.className = "validation-icon";
+          return;
+        }
+
+        if (isValid) {
+          icon.innerHTML = "✓";
+          icon.className = "validation-icon valid";
+          errorDiv.textContent = "";
+        } else {
+          icon.innerHTML = "✗";
+          icon.className = "validation-icon invalid";
+        }
+      }
+
+      function showError(fieldId, message) {
+        const errorDiv = document.getElementById(fieldId + "-error");
+        const field = document.getElementById(fieldId);
+
+        errorDiv.textContent = message;
+        field.parentElement.parentElement.classList.add("error");
+      }
+
+      function clearError(fieldId) {
+        const errorDiv = document.getElementById(fieldId + "-error");
+        const field = document.getElementById(fieldId);
+
+        errorDiv.textContent = "";
+        field.parentElement.parentElement.classList.remove("error");
+      }
+
+      function validateField(fieldId, value, validationFn, errorMessage) {
+        const isEmpty = !value || value.trim() === "";
+
+        if (isEmpty) {
+          showValidationIcon(fieldId, false, true);
+          clearError(fieldId);
+          return null; // null means empty, not invalid
+        }
+
+        const isValid = validationFn(value);
+        showValidationIcon(fieldId, isValid);
+
+        if (!isValid) {
+          showError(fieldId, errorMessage);
+          return false;
+        } else {
+          clearError(fieldId);
+          return true;
+        }
+      }
+
+      function validateRequiredFieldWithFeedback(
+        fieldId,
+        value,
+        validationFn,
+        errorMessage,
+        requiredMessage
+      ) {
+        const isEmpty = !value || value.trim() === "";
+
+        if (isEmpty) {
+          showValidationIcon(fieldId, false);
+          showError(fieldId, requiredMessage);
+          return false;
+        }
+
+        const isValid = validationFn(value);
+        showValidationIcon(fieldId, isValid);
+
+        if (!isValid) {
+          showError(fieldId, errorMessage);
+          return false;
+        } else {
+          clearError(fieldId);
+          return true;
+        }
+      }
+
+      // Clear validation state for iSCSI fields
+      function clearIscsiValidation() {
+        const iscsiFieldIds = [
+          "target",
+          "iqn",
+          "portal",
+          "username",
+          "password",
+          "lun",
+        ];
+        iscsiFieldIds.forEach((fieldId) => {
+          clearError(fieldId);
+          showValidationIcon(fieldId, false, true);
+        });
+      }
+
+      // Event listeners
+      document
+        .getElementById("storage_type")
+        .addEventListener("change", function () {
+          const iscsiFields = document.getElementById("iscsi-fields");
+          if (this.value === "iscsi") {
+            iscsiFields.classList.add("show");
+          } else {
+            iscsiFields.classList.remove("show");
+            clearIscsiValidation();
+          }
+        });
+
+      document
+        .getElementById("advanced-toggle")
+        .addEventListener("click", function () {
+          const advancedOptions = document.getElementById("advanced-options");
+          const isVisible = advancedOptions.style.display !== "none";
+
+          advancedOptions.style.display = isVisible ? "none" : "block";
+          this.textContent = isVisible
+            ? "Show Advanced Options"
+            : "Hide Advanced Options";
+        });
+
+      // Real-time validation with enhanced feedback
+      document
+        .getElementById("iscsi_target")
+        .addEventListener("input", function () {
+          validateField(
+            "target",
+            this.value,
+            validateIP,
+            "Invalid IP address format (e.g., 192.168.1.100)"
+          );
+        });
+
+      document
+        .getElementById("iscsi_target")
+        .addEventListener("blur", function () {
+          validateField(
+            "target",
+            this.value,
+            validateIP,
+            "Invalid IP address format (e.g., 192.168.1.100)"
+          );
+        });
+
+      document
+        .getElementById("iscsi_iqn")
+        .addEventListener("input", function () {
+          validateField(
+            "iqn",
+            this.value,
+            validateIQN,
+            "Invalid IQN format. Expected: iqn.yyyy-mm.naming-authority:unique-name"
+          );
+        });
+
+      document
+        .getElementById("iscsi_iqn")
+        .addEventListener("blur", function () {
+          validateField(
+            "iqn",
+            this.value,
+            validateIQN,
+            "Invalid IQN format. Expected: iqn.yyyy-mm.naming-authority:unique-name"
+          );
+        });
+
+      document
+        .getElementById("iscsi_portal")
+        .addEventListener("input", function () {
+          validateField(
+            "portal",
+            this.value,
+            validatePortal,
+            "Invalid portal format. Expected: IP:Port (e.g., 192.168.1.100:3260)"
+          );
+        });
+
+      document
+        .getElementById("iscsi_portal")
+        .addEventListener("blur", function () {
+          validateField(
+            "portal",
+            this.value,
+            validatePortal,
+            "Invalid portal format. Expected: IP:Port (e.g., 192.168.1.100:3260)"
+          );
+        });
+
+      // Credential validation
+      function validateCredentialFields() {
+        const username = document.getElementById("iscsi_username").value;
+        const password = document.getElementById("iscsi_password").value;
+
+        const isValid = validateCredentials(username, password);
+
+        if (!isValid) {
+          if (username && !password) {
+            showError(
+              "password",
+              "Password is required when username is provided"
+            );
+            showValidationIcon("password", false);
+          } else if (password && !username) {
+            showError(
+              "username",
+              "Username is required when password is provided"
+            );
+            showValidationIcon("username", false);
+          }
+        } else {
+          clearError("username");
+          clearError("password");
+
+          // Show validation icons based on individual field content
+          if (username) {
+            showValidationIcon("username", true);
+          } else {
+            showValidationIcon("username", false, true);
+          }
+
+          if (password) {
+            showValidationIcon("password", true);
+          } else {
+            showValidationIcon("password", false, true);
+          }
+        }
+
+        return isValid;
+      }
+
+      document
+        .getElementById("iscsi_username")
+        .addEventListener("input", validateCredentialFields);
+
+      document
+        .getElementById("iscsi_username")
+        .addEventListener("blur", validateCredentialFields);
+
+      document
+        .getElementById("iscsi_password")
+        .addEventListener("input", validateCredentialFields);
+
+      document
+        .getElementById("iscsi_password")
+        .addEventListener("blur", validateCredentialFields);
+
+      // LUN ID validation
+      document
+        .getElementById("iscsi_lun_id")
+        .addEventListener("input", function () {
+          validateField(
+            "lun",
+            this.value,
+            validateLunId,
+            "LUN ID must be a number between 0 and 255"
+          );
+        });
+
+      document
+        .getElementById("iscsi_lun_id")
+        .addEventListener("blur", function () {
+          validateField(
+            "lun",
+            this.value,
+            validateLunId,
+            "LUN ID must be a number between 0 and 255"
+          );
+        });
+
+      // Form submission with comprehensive validation
+      document
+        .getElementById("storageForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(this);
+          const data = Object.fromEntries(formData.entries());
+
+          let hasErrors = false;
+
+          // Validate basic required fields
+          if (!validateRequiredField(data.name)) {
+            const nameField = document.getElementById("name");
+            nameField.parentElement.classList.add("error");
+            hasErrors = true;
+          }
+
+          if (!validateRequiredField(data.zone)) {
+            const zoneField = document.getElementById("zone");
+            zoneField.parentElement.classList.add("error");
+            hasErrors = true;
+          }
+
+          if (!validateRequiredField(data.storage_type)) {
+            const storageTypeField = document.getElementById("storage_type");
+            storageTypeField.parentElement.classList.add("error");
+            hasErrors = true;
+          }
+
+          // Validate iSCSI specific fields if iSCSI is selected
+          if (data.storage_type === "iscsi") {
+            // Required field validation with specific error messages
+            if (
+              !validateRequiredFieldWithFeedback(
+                "target",
+                data.iscsi_target,
+                validateIP,
+                "Invalid IP address format (e.g., 192.168.1.100)",
+                "Target IP address is required"
+              )
+            ) {
+              hasErrors = true;
+            }
+
+            if (
+              !validateRequiredFieldWithFeedback(
+                "iqn",
+                data.iscsi_iqn,
+                validateIQN,
+                "Invalid IQN format. Expected: iqn.yyyy-mm.naming-authority:unique-name",
+                "IQN is required"
+              )
+            ) {
+              hasErrors = true;
+            }
+
+            if (
+              !validateRequiredFieldWithFeedback(
+                "portal",
+                data.iscsi_portal,
+                validatePortal,
+                "Invalid portal format. Expected: IP:Port (e.g., 192.168.1.100:3260)",
+                "Portal address is required"
+              )
+            ) {
+              hasErrors = true;
+            }
+
+            // Validate credentials consistency
+            if (
+              !validateCredentials(data.iscsi_username, data.iscsi_password)
+            ) {
+              hasErrors = true;
+            }
+
+            // Validate LUN ID if provided
+            if (data.iscsi_lun_id && !validateLunId(data.iscsi_lun_id)) {
+              showError("lun", "LUN ID must be a number between 0 and 255");
+              hasErrors = true;
+            }
+
+            // Additional validation: ensure portal IP matches target IP (common configuration)
+            if (
+              data.iscsi_target &&
+              data.iscsi_portal &&
+              validateIP(data.iscsi_target) &&
+              validatePortal(data.iscsi_portal)
+            ) {
+              const portalIP = data.iscsi_portal.split(":")[0];
+              if (data.iscsi_target !== portalIP) {
+                showError(
+                  "portal",
+                  "Portal IP should typically match the target IP address"
+                );
+                // This is a warning, not a blocking error
+                console.warn(
+                  "Portal IP differs from target IP - this may be intentional"
+                );
+              }
+            }
+          }
+
+          if (hasErrors) {
+            // Scroll to first error
+            const firstError = document.querySelector(".form-group.error");
+            if (firstError) {
+              firstError.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            }
+            return;
+          }
+
+          // All validation passed - simulate API call
+          const submitBtn = document.getElementById("submit-btn");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Creating...";
+
+          // Simulate network delay and validation
+          setTimeout(() => {
+            // Simulate successful creation
+            alert(
+              "Storage created successfully!\n\nConfiguration:\n" +
+                JSON.stringify(data, null, 2)
+            );
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Create Storage";
+
+            // Reset form validation state
+            document.querySelectorAll(".form-group.error").forEach((group) => {
+              group.classList.remove("error");
+            });
+            document.querySelectorAll(".error-message").forEach((error) => {
+              error.textContent = "";
+            });
+            document.querySelectorAll(".validation-icon").forEach((icon) => {
+              icon.innerHTML = "";
+              icon.className = "validation-icon";
+            });
+          }, 2000);
+        });
+    </script>
+  </body>
+</html>

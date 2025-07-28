@@ -57,10 +57,17 @@ type StorageCreateInput struct {
 	// | rbd             | rbd_client_mount_timeout    | 否         |    120        |单位: 秒    |
 	// | nfs             | nfs_host                    | 是         |            |网络文件系统主机    |
 	// | nfs             | nfs_shared_dir            | 是         |            |网络文件系统共享目录    |
+	// | iscsi           | iscsi_target                | 是         |            |iSCSI Target地址    |
+	// | iscsi           | iscsi_iqn                   | 是         |            |iSCSI IQN名称    |
+	// | iscsi           | iscsi_portal                | 是         |            |iSCSI Portal地址    |
+	// | iscsi           | iscsi_username              | 否         |            |iSCSI认证用户名    |
+	// | iscsi           | iscsi_password              | 否         |            |iSCSI认证密码    |
+	// | iscsi           | iscsi_lun_id                | 否         |    0        |iSCSI LUN ID    |
 	// local: 本地存储
 	// rbd: ceph块存储, ceph存储创建时仅会检测是否重复创建，不会具体检测认证参数是否合法，只有挂载存储时
 	// 计算节点会验证参数，若挂载失败，宿主机和存储不会关联，可以通过查看存储日志查找挂载失败原因
-	// enum: ["local", "rbd", "nfs", "gpfs"]
+	// iscsi: iSCSI网络存储, 通过iSCSI协议连接到远程存储设备
+	// enum: ["local", "rbd", "nfs", "gpfs", "iscsi"]
 	// required: true
 	StorageType string `json:"storage_type"`
 
@@ -116,6 +123,30 @@ type StorageCreateInput struct {
 	// 网络文件系统共享目录, storage_type 为 nfs 时, 此参数必传
 	// example: /nfs_root/
 	NfsSharedDir string `json:"nfs_shared_dir"`
+
+	// iSCSI Target 地址, storage_type 为 iscsi 时, 此参数必传
+	// example: 192.168.1.100
+	IscsiTarget string `json:"iscsi_target"`
+
+	// iSCSI IQN (iSCSI Qualified Name), storage_type 为 iscsi 时, 此参数必传
+	// example: iqn.2023-01.com.example:storage.target01
+	IscsiIqn string `json:"iscsi_iqn"`
+
+	// iSCSI Portal 地址, storage_type 为 iscsi 时, 此参数必传
+	// example: 192.168.1.100:3260
+	IscsiPortal string `json:"iscsi_portal"`
+
+	// iSCSI 认证用户名, storage_type 为 iscsi 时, 此参数可选
+	// example: iscsi_user
+	IscsiUsername string `json:"iscsi_username"`
+
+	// iSCSI 认证密码, storage_type 为 iscsi 时, 此参数可选
+	// example: iscsi_password
+	IscsiPassword string `json:"iscsi_password"`
+
+	// iSCSI LUN ID, storage_type 为 iscsi 时, 此参数可选
+	// default: 0
+	IscsiLunId int `json:"iscsi_lun_id"`
 
 	// swagger:ignore
 	HardwareInfo *StorageHardwareInfo `json:"hardware_info"`
@@ -254,6 +285,12 @@ type StorageUpdateInput struct {
 
 	RbdTimeoutInput
 
+	// iSCSI 认证用户名, storage_type 为 iscsi 时, 此参数可选
+	IscsiUsername string `json:"iscsi_username"`
+
+	// iSCSI 认证密码, storage_type 为 iscsi 时, 此参数可选
+	IscsiPassword string `json:"iscsi_password"`
+
 	// swagger:ignore
 	StorageConf *jsonutils.JSONDict
 
@@ -274,6 +311,21 @@ type RbdStorageConf struct {
 	Key               string `json:"key"`
 	EnableMessengerV2 bool   `json:"enable_messenger_v2"`
 	AutoCacheImages   bool   `json:"auto_cache_images"`
+}
+
+type IscsiStorageConf struct {
+	// iSCSI Target 地址
+	Target string `json:"target"`
+	// iSCSI IQN (iSCSI Qualified Name)
+	Iqn string `json:"iqn"`
+	// iSCSI Portal 地址
+	Portal string `json:"portal"`
+	// iSCSI 认证用户名 (可选)
+	Username string `json:"username,omitempty"`
+	// iSCSI 认证密码 (可选)
+	Password string `json:"password,omitempty"`
+	// iSCSI LUN ID
+	LunId int `json:"lun_id"`
 }
 
 type StorageSetCmtBoundInput struct {

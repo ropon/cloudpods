@@ -70,7 +70,7 @@ type StorageCreateOptions struct {
 	ZONE                  string `help:"Zone id of storage"`
 	Capacity              int64  `help:"Capacity of the Storage"`
 	MediumType            string `help:"Medium type" choices:"ssd|rotate" default:"ssd"`
-	StorageType           string `help:"Storage type" choices:"local|nas|vsan|rbd|nfs|gpfs|baremetal|clvm|slvm"`
+	StorageType           string `help:"Storage type" choices:"local|nas|vsan|rbd|nfs|gpfs|baremetal|clvm|slvm|iscsi"`
 	RbdMonHost            string `help:"Ceph mon_host config"`
 	RbdEnableMessengerV2  bool   `help:"ceph enable Messenger V2"`
 	RbdRadosMonOpTimeout  int64  `help:"ceph rados_mon_op_timeout"`
@@ -85,6 +85,13 @@ type StorageCreateOptions struct {
 	SlvmVgName            string `help:"slvm vg name"`
 	Lvmlockd              bool   `help:"shared lvm storage use lvmlockd"`
 	MasterHost            string `help:"slvm storage master host"`
+	// iSCSI storage options
+	IscsiTarget   string `help:"iSCSI Target server address"`
+	IscsiIqn      string `help:"iSCSI Qualified Name (IQN)"`
+	IscsiPortal   string `help:"iSCSI Portal address (IP:Port)"`
+	IscsiUsername string `help:"iSCSI authentication username (optional)"`
+	IscsiPassword string `help:"iSCSI authentication password (optional)"`
+	IscsiLunId    int    `help:"iSCSI LUN ID" default:"0"`
 }
 
 func (opts *StorageCreateOptions) Params() (jsonutils.JSONObject, error) {
@@ -103,6 +110,10 @@ func (opts *StorageCreateOptions) Params() (jsonutils.JSONObject, error) {
 	} else if opts.StorageType == "slvm" {
 		if len(opts.SlvmVgName) == 0 {
 			return nil, fmt.Errorf("Storage type slvm missing conf slvm_vg_name")
+		}
+	} else if opts.StorageType == "iscsi" {
+		if len(opts.IscsiTarget) == 0 || len(opts.IscsiIqn) == 0 || len(opts.IscsiPortal) == 0 {
+			return nil, fmt.Errorf("Storage type iscsi missing required conf: target, iqn, or portal")
 		}
 	}
 	return options.StructToParams(opts)
