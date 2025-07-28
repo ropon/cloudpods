@@ -143,6 +143,14 @@ func (self *SKVMHostDriver) ValidateAttachStorage(ctx context.Context, userCred 
 		}
 		input.MountPoint = vgName
 		return self.validateSharedLVM(ctx, userCred, host, storage, input)
+	} else if storage.StorageType == api.STORAGE_ISCSI {
+		if host.HostStatus != api.HOST_ONLINE {
+			return input, httperrors.NewInvalidStatusError("Attach iscsi storage require host status is online")
+		}
+		target, _ := storage.StorageConf.GetString("iscsi_target")
+		lun, _ := storage.StorageConf.Int("iscsi_lun_id")
+		iqn, _ := storage.StorageConf.GetString("iscsi_iqn")
+		input.MountPoint = fmt.Sprintf("iscsi:%s:%d:%s", target, lun, iqn)
 	}
 	return input, nil
 }
