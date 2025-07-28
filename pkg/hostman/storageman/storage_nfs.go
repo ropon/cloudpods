@@ -152,15 +152,19 @@ func (s *SNFSStorage) SyncStorageSize() (api.SHostStorageStat, error) {
 	stat := api.SHostStorageStat{
 		StorageId: s.StorageId,
 	}
-	capacity, _, err := s.GetAvailSizeMb()
+	capacity, _, err := s.getCapacity()
 	if err != nil {
 		return stat, errors.Wrap(err, "getCapacity")
 	}
 	stat.CapacityMb = int64(capacity)
-	used := 0
+	used := int64(0)
 	for _, d := range s.Disks {
-		used += d.GetSizeMb()
+		if desc, err := d.GetDesc(); err == nil {
+			if size, err := desc.Int("disk_size"); err == nil {
+				used += size
+			}
+		}
 	}
-	stat.ActualCapacityUsedMb = int64(used)
+	stat.ActualCapacityUsedMb = used
 	return stat, nil
 }
