@@ -431,33 +431,6 @@ func (s *SIscsiStorage) SyncStorageInfo() (jsonutils.JSONObject, error) {
 	)
 }
 
-// SyncStorageSize returns storage size information
-func (s *SIscsiStorage) SyncStorageSize() (api.SHostStorageStat, error) {
-	stat := api.SHostStorageStat{
-		StorageId: s.StorageId,
-	}
-
-	// For iSCSI storage, we report the device size if connected
-	if s.IsConnected() {
-		devicePath := s.GetDevicePath()
-		if devicePath != "" {
-			if size, err := s.getDeviceSize(devicePath); err == nil {
-				stat.CapacityMb = size
-				usedSizeMb := int64(0)
-				for _, disk := range s.Disks {
-					desc, _ := disk.GetDesc()
-					if size, err := desc.Int("disk_size"); err == nil {
-						usedSizeMb += size
-					}
-				}
-				stat.ActualCapacityUsedMb = usedSizeMb
-			}
-		}
-	}
-
-	return stat, nil
-}
-
 // getDeviceSize gets the size of a block device in MB
 func (s *SIscsiStorage) getDeviceSize(devicePath string) (int64, error) {
 	cmd := procutils.NewCommand("blockdev", "--getsize64", devicePath)
