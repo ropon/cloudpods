@@ -444,7 +444,7 @@ func (s *SIscsiStorage) SyncStorageSize() (api.SHostStorageStat, error) {
 			if size, err := s.getDeviceSize(devicePath); err == nil {
 				stat.CapacityMb = size
 				usedSizeMb := int64(0)
-				for _, disk := range s.GetDisks() {
+				for _, disk := range s.Disks {
 					usedSizeMb += int64(disk.GetSizeMb())
 				}
 				stat.ActualCapacityUsedMb = usedSizeMb
