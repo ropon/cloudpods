@@ -146,3 +146,22 @@ func (s *SNFSStorage) Detach() error {
 	}
 	return nil
 }
+
+func (s *SNFSStorage) SyncStorageSize() (api.SHostStorageStat, error) {
+	s.checkAndMount()
+	stat := api.SHostStorageStat{
+		StorageId: s.StorageId,
+	}
+	capacity, free, err := s.getCapacity()
+	if err != nil {
+		return stat, errors.Wrap(err, "getCapacity")
+	}
+	stat.CapacityMb = int64(capacity)
+	stat.FreeCapacityMb = int64(free)
+	used := 0
+	for _, d := range s.GetDisks() {
+		used += d.GetSizeMb()
+	}
+	stat.ActualCapacityUsedMb = int64(used)
+	return stat, nil
+}

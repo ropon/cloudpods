@@ -443,7 +443,11 @@ func (s *SIscsiStorage) SyncStorageSize() (api.SHostStorageStat, error) {
 		if devicePath != "" {
 			if size, err := s.getDeviceSize(devicePath); err == nil {
 				stat.CapacityMb = size
-				stat.ActualCapacityUsedMb = 0 // iSCSI doesn't track usage at storage level
+				usedSizeMb := int64(0)
+				for _, disk := range s.GetDisks() {
+					usedSizeMb += int64(disk.GetSizeMb())
+				}
+				stat.ActualCapacityUsedMb = usedSizeMb
 			}
 		}
 	}

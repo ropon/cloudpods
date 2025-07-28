@@ -336,6 +336,9 @@ func (s *SStorageManager) GetStoragecacheById(scId string) IImageCacheManger {
 }
 
 func (s *SStorageManager) NewSharedStorageInstance(mountPoint, storageType string) IStorage {
+	if storageType == api.STORAGE_ISCSI {
+		return NewIscsiStorage(s, mountPoint)
+	}
 	return NewStorage(s, mountPoint, storageType)
 }
 
